@@ -12,7 +12,7 @@ namespace Registro_Detalle_Prestamos.Models
         [Key]
         public int PrestamoId { get; set; }
         public DateTime Fecha { get; set; }
-        [Required(ErrorMessage = "Es obligatorio introducir un concepto.")]
+        [Required(ErrorMessage = " ")]
         public string Concepto { get; set; }
         [Range(minimum: 100, maximum: 1000000)]
         public double Monto { get; set; }

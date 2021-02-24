@@ -12,9 +12,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="DAL\" />
-    <Folder Include="BLL\" />
-  </ItemGroup>
-
 </Project>
