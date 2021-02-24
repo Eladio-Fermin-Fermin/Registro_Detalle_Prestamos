@@ -1,0 +1,254 @@
+﻿@page "/Moras"
+@page "/Moras/{MoraId:int}"
+
+@inject IToastService toast
+
+<div class="shadow-lg p-3 mb-5 bg-white rounded">
+
+    <EditForm Model="mora" OnValidSubmit="Guardar">
+        <DataAnnotationsValidator />
+        <div class="card">
+            <div class="card-header">
+                <h3>Registro Moras</h3>
+            </div>
+
+            <div class="card-body">
+                <form>
+                    <div class="form-row align-items-center">
+                        <div class="col">
+                            <div class="form-group">
+                                <label>Mora Id</label>
+                                <div class="input-group">
+                                    <InputNumber @bind-Value="this.MoraId" class="form-control" />
+                                    <div class="input-group-append">
+                                        <button type="button" style="z-index:0" class="btn btn-secondary" @onclick="Buscar">Buscar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <InputDate @bind-Value="mora.Fecha" class="form-control" />
+                    </div>
+                    <div class="form-group">
+                        <label>Total</label>
+                        <InputNumber @bind-Value="mora.Total" class="form-control" readonly />
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-info">
+                    <h5 class="text-white">Mora Detalle</h5>
+                </div>
+                <div class="card-body">
+
+                    <div class="row">
+                        <div class="col form-group">
+                            <label>Prestamo Id</label>
+                            <InputSelect @bind-Value="detalles.PrestamoId" class="form-control" @onclick="GetNombre">
+                                @foreach (var item in lista)
+                                {
+                                    <option value="@item.PrestamoId">@item.PrestamoId</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="col form-group">
+                            <label>Persona</label>
+                            <InputText @bind-Value="persona.Nombres" class="form-control" readonly />
+
+                        </div>
+                        <div class="col form-group">
+                            <label>Valor</label>
+                            <div class="input-group">
+                                <InputNumber @bind-Value="detalles.Valor" class="form-control" />
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-success" @onclick="Agregar">Agregar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive text-nowrap" style="position: relative; height:200px; overflow: auto; display: block;">
+                        <table class="table table-striped">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Prestamo Id</th>
+                                    <th>Persona</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white">
+                                @foreach (var item in DetalleDTO)
+                                {
+                                    <tr>
+                                        <td>@item.PrestamoId</td>
+                                        <td>@item.Nombres</td>
+                                        <td>@item.Valor</td>
+                                        <td><button type="button" class="btn btn-danger" @onclick="() => Remover(item)">Remover</button></td>
+
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <div class="form-group text-center">
+                    <button type="button" class="btn btn-primary" @onclick="Nuevo">Nuevo</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="button" class="btn btn-danger" @onclick="Eliminar">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+
+</div>
+
+@code{
+
+    [Inject]
+    public MorasBLL morasBLL { get; set; }
+
+    [Inject]
+    public PrestamosBLL prestamosBLL { get; set; }
+
+    [Inject]
+    public PersonasBLL personasBLL { get; set; }
+
+    [Parameter]
+    public int MoraId { get; set; }
+    private List<dynamic> DetalleDTO = new List<dynamic>();
+    private Moras mora = new Moras();
+    private Personas persona = new Personas();
+    private MorasDetalles detalles = new MorasDetalles();
+    List<Prestamos> lista = new List<Prestamos>();
+
+    protected async override Task OnInitializedAsync()
+    {
+        lista = await prestamosBLL.GetPrestamos();
+        Limpiar();
+    }
+
+    private async void Buscar()
+    {
+        var registro = await morasBLL.Buscar(this.MoraId);
+        if (registro != null)
+        {
+            this.mora = registro;
+            SourceDTO(mora.MorasDetalles);
+        }
+        else
+        {
+            toast.ShowInfo("No se encontro el registro deseado.");
+        }
+    }
+
+    private void Agregar()
+    {
+        mora.Total += detalles.Valor;
+
+        mora.MorasDetalles.Add(detalles);
+
+        SourceDTO(detalles);
+
+        detalles = new MorasDetalles();
+        persona = new Personas();
+
+    }
+
+    private void Remover(MorasDetalles detalles)
+    {
+        mora.MorasDetalles.Remove(detalles);
+        mora.Total -= detalles.Valor;
+    }
+
+    private void Nuevo()
+    {
+        Limpiar();
+    }
+
+    private async void Guardar()
+    {
+        mora.MoraId = this.MoraId;
+        if (await morasBLL.Guardar(mora))
+        {
+            toast.ShowSuccess("Guardado.");
+            Limpiar();
+        }
+        else
+        {
+            toast.ShowError("Error al guardar el registro.");
+        }
+    }
+
+    private async void Eliminar()
+    {
+        if (await morasBLL.Eliminar(this.MoraId))
+        {
+            toast.ShowSuccess("Eliminado");
+            Limpiar();
+        }
+        else
+        {
+            toast.ShowError("Error al eliminar el registro.");
+        }
+    }
+
+    private void Limpiar()
+    {
+        this.mora = new Moras();
+        this.MoraId = 0;
+    }
+
+    private async void SourceDTO(MorasDetalles detalles)
+    {
+        var prestamos = await prestamosBLL.Buscar(detalles.PrestamoId);
+        var persona = await personasBLL.Buscar(prestamos.PersonaId);
+
+        var dto = new
+        {
+            detalles.PrestamoId,
+            persona.Nombres,
+            detalles.Valor,
+        };
+
+        DetalleDTO.Add(dto);
+    }
+
+    private async void SourceDTO(List<MorasDetalles> detalles)
+    {
+        foreach (var item in detalles)
+        {
+            var prestamo = await prestamosBLL.Buscar(item.PrestamoId);
+            var persona = await personasBLL.Buscar(prestamo.PersonaId);
+
+            var dto = new
+            {
+                item.PrestamoId,
+                persona.Nombres,
+                item.Valor,
+            };
+
+            DetalleDTO.Add(dto);
+        }
+
+
+    }
+
+    private async void GetNombre()
+    {
+        if (detalles.PrestamoId != 0)
+        {
+            var prestamo = await prestamosBLL.Buscar(detalles.PrestamoId);
+            persona = await personasBLL.Buscar(prestamo.PersonaId);
+
+        }
+    }
+
+}
