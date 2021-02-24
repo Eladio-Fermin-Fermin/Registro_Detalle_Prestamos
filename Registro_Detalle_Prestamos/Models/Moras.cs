@@ -15,7 +15,7 @@ namespace Registro_Detalle_Prestamos.Models
         public double Total { get; set; }
 
         [ForeignKey("MoraId")]
-        public virtual List<MorasDetalle> MorasDetalles { get; set; } = new List<MorasDetalle>();
+        public virtual List<MorasDetalles> MorasDetalles { get; set; } = new List<MorasDetalles>();
 
         public Moras()
         {
